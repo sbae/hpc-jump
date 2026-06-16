@@ -14,7 +14,31 @@ This keeps the VS Code server, file watchers, terminals, and language servers of
 
 ## Install
 
+### Install directly from GitHub
+
+Using pipx (recommended):
+
 ```bash
+pipx install git+https://github.com/sbae/hpc-jump.git
+```
+
+Upgrade later:
+
+```bash
+pipx upgrade hpc-jump
+```
+
+Using pip:
+
+```bash
+pip install git+https://github.com/sbae/hpc-jump.git
+```
+
+### Install from a local clone
+
+```bash
+git clone https://github.com/sbae/hpc-jump.git
+cd hpc-jump
 pipx install .
 ```
 
@@ -48,6 +72,7 @@ Useful variants:
 ```bash
 hpc-jump connect my-hpc --time 04:00:00 --cpus 4 --mem 16G
 hpc-jump connect my-hpc --existing-job 12345678
+hpc-jump attach my-hpc 12345678
 hpc-jump ssh-config my-hpc --node compute123
 hpc-jump cancel my-hpc --job-id 12345678
 ```
