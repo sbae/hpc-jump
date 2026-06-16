@@ -1,0 +1,11 @@
+[clusters.my-hpc]
+login_host = "hpc-login"
+user = "myuser"
+ssh_alias = "my-hpc-current"
+default_partition = "cpu"
+default_time = "04:00:00"
+default_cpus = 4
+default_mem = "16G"
+salloc_extra = []
+remote_project_path = "/path/to/project"
+auto_reuse = true
