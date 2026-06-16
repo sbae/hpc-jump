@@ -4,8 +4,19 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from .config import DEFAULT_CONFIG_PATH, load_cluster
+from .doctor import (
+    check_config_file,
+    check_executable,
+    check_login_reachable,
+    check_python,
+    check_remote_command,
+    check_ssh_config_writable,
+    check_vscode_remote_ssh,
+    platform_summary,
+)
 from .slurm import allocate_job, cancel_job, find_reusable_job, resolve_job, wait_for_node
 from .ssh_config import DEFAULT_SSH_CONFIG, update_ssh_config
 from .vscode import launch_vscode
@@ -114,6 +125,49 @@ def cancel(
     cluster = load_cluster(cluster_name, config)
     cancel_job(cluster, job_id)
     console.print(f"Cancelled Slurm job {job_id}")
+
+
+@app.command()
+def doctor(
+    cluster_name: str | None = typer.Argument(None, help="Optional cluster profile to test."),
+    config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", help="Path to config.toml."),
+    ssh_config: Path = typer.Option(DEFAULT_SSH_CONFIG, "--ssh-config", help="Path to SSH config."),
+    remote: bool = typer.Option(True, "--remote/--no-remote", help="Run login-node Slurm checks when a cluster is provided."),
+) -> None:
+    console.print(f"Platform: {platform_summary()}")
+
+    results = [
+        check_python(),
+        check_executable("ssh", ["ssh", "-V"]),
+        check_executable("code", ["code", "--version"]),
+        check_config_file(config),
+        check_ssh_config_writable(ssh_config),
+        check_vscode_remote_ssh(),
+    ]
+
+    cluster = None
+    if cluster_name is not None:
+        try:
+            cluster = load_cluster(cluster_name, config)
+            results.append(type(results[0])("cluster profile", True, cluster_name))
+        except Exception as exc:
+            results.append(type(results[0])("cluster profile", False, str(exc)))
+
+    if cluster is not None and remote:
+        results.append(check_login_reachable(cluster))
+        for command in ["squeue", "salloc", "scontrol", "scancel"]:
+            results.append(check_remote_command(cluster, command))
+
+    table = Table(title="hpc-jump doctor")
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+    for item in results:
+        table.add_row(item.name, "OK" if item.ok else "FAIL", item.detail)
+    console.print(table)
+
+    if not all(item.ok for item in results):
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
