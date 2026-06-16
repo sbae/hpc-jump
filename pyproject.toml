@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hpc-jump"
+version = "0.1.0"
+description = "Open VS Code Remote-SSH on a Slurm compute node via ProxyJump."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+]
+
+[project.scripts]
+hpc-jump = "hpc_jump.cli:app"
+hpc-code = "hpc_jump.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hpc_jump"]
