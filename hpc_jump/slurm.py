@@ -35,6 +35,8 @@ def run_login(
     return subprocess.run(
         [
             "ssh",
+            "-p",
+            str(cluster.port),
             "-o",
             f"ConnectTimeout={min(timeout, DEFAULT_SSH_TIMEOUT_SECONDS)}",
             _ssh_target(cluster),
