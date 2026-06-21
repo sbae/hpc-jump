@@ -8,7 +8,6 @@ from typing import Sequence
 
 from .config import ClusterConfig
 
-
 DEFAULT_SSH_TIMEOUT_SECONDS = 60
 DEFAULT_ALLOCATION_TIMEOUT_SECONDS = 3600
 
@@ -18,6 +17,7 @@ class SlurmJob:
     job_id: str
     state: str
     node: str | None = None
+    name: str | None = None
 
 
 def _ssh_target(cluster: ClusterConfig) -> str:
@@ -57,38 +57,40 @@ def _first_host_from_nodelist(cluster: ClusterConfig, nodelist: str) -> str | No
 
 
 def resolve_job(cluster: ClusterConfig, job_id: str) -> SlurmJob:
-    fmt = "%i|%T|%N"
+    fmt = "%i|%T|%N|%j"
     cmd = f"squeue -j {shlex.quote(job_id)} -h -o {shlex.quote(fmt)}"
     out = run_login(cluster, cmd).stdout.strip()
     if not out:
         raise RuntimeError(f"No active Slurm job found with id {job_id}")
 
     line = out.splitlines()[0]
-    parts = line.split("|", 2)
-    if len(parts) != 3:
+    parts = line.split("|", 3)
+    if len(parts) != 4:
         raise RuntimeError(f"Could not parse squeue output: {line}")
 
-    job, state, nodelist = parts
-    return SlurmJob(job_id=job, state=state, node=_first_host_from_nodelist(cluster, nodelist))
+    job, state, nodelist, name = parts
+    return SlurmJob(job_id=job, state=state, node=_first_host_from_nodelist(cluster, nodelist), name=name)
 
 
 def find_reusable_job(cluster: ClusterConfig, partition: str | None = None) -> SlurmJob | None:
-    fmt = "%i|%T|%P|%N"
+    fmt = "%i|%T|%P|%N|%j"
     cmd = f"squeue -u $USER -h -t RUNNING -o {shlex.quote(fmt)}"
     out = run_login(cluster, cmd, check=False).stdout.strip()
     if not out:
         return None
 
     for line in out.splitlines():
-        parts = line.split("|", 3)
-        if len(parts) != 4:
+        parts = line.split("|", 4)
+        if len(parts) != 5:
             continue
-        job_id, state, job_partition, nodelist = parts
+        job_id, state, job_partition, nodelist, name = parts
+        if name != cluster.job_name_prefix:
+            continue
         if partition and job_partition != partition:
             continue
         node = _first_host_from_nodelist(cluster, nodelist)
         if node:
-            return SlurmJob(job_id=job_id, state=state, node=node)
+            return SlurmJob(job_id=job_id, state=state, node=node, name=name)
     return None
 
 
@@ -104,6 +106,7 @@ def allocate_job(
     args = [
         "salloc",
         "--no-shell",
+        f"--job-name={cluster.job_name_prefix}",
         f"--time={time_limit}",
         f"--cpus-per-task={cpus}",
         f"--mem={mem}",
