@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .config import DEFAULT_CONFIG_PATH, load_cluster
+from .config import DEFAULT_CONFIG_PATH, init_config, load_cluster
 from .doctor import (
     check_config_file,
     check_executable,
@@ -23,6 +23,22 @@ from .vscode import launch_vscode
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
+
+
+@app.command()
+def init(
+    cluster_name: str = typer.Argument("my-hpc", help="Cluster profile name to create."),
+    config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", help="Path to write config.toml."),
+    force: bool = typer.Option(False, "--force", help="Overwrite an existing config file."),
+) -> None:
+    try:
+        path = init_config(config, cluster_name=cluster_name, overwrite=force)
+    except FileExistsError as exc:
+        console.print(f"[red]{exc}[/red]")
+        console.print("Use --force to overwrite it.")
+        raise typer.Exit(1) from exc
+    console.print(f"Created config template: [bold]{path}[/bold]")
+    console.print("Edit login_host, user, and remote_project_path before running connect.")
 
 
 @app.command()
