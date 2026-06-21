@@ -1,38 +1,48 @@
-# Example HPC cluster profile.
+# hpc-jump configuration file.
 # Create one [clusters.<name>] section per cluster.
 
 [clusters.my-hpc]
 
-# Login node hostname or full domain name.
-# This is the real SSH destination for the login node.
-# The default SSH port is 22 unless your cluster says otherwise.
+# Login node hostname or FQDN.
+# Examples:
+#   login.hpc.edu
 login_host = "login.hpc.edu"
 
-# Username used to SSH into the cluster.
-# This is usually your HPC/Linux/Kerberos username, not your email address.
+# SSH port. Most clusters use 22.
+port = 22
+
+# Username used when logging into the cluster.
+# Usually your HPC/Linux/Kerberos username, not your email address.
 user = "your_username"
 
-# Local nickname managed by hpc-jump for the active compute node.
-# VS Code connects to this alias after hpc-jump points it at the Slurm node.
-ssh_alias = "my-hpc-current"
+# Local SSH alias managed by hpc-jump.
+# This is the name VS Code connects to after hpc-jump resolves the compute node.
+ssh_alias = "hpc-cpu-short"
 
-# Slurm defaults for a lightweight editor session.
+# Default Slurm partition/queue.
 default_partition = "cpu_short"
-default_time = "00-12:00:00"
+
+# Default interactive allocation duration.
+default_time = "04:00:00"
+
+# Default CPU request for the editor session.
 default_cpus = 1
+
+# Default total memory request.
+# For clusters that require memory per CPU, use salloc_extra below instead.
 default_mem = "16G"
 
 # Extra Slurm flags passed to salloc.
-# Example for clusters that prefer memory per CPU:
-# salloc_extra = ["--mem-per-cpu=30G"]
+# Example: salloc_extra = ["--mem-per-cpu=30G"]
 salloc_extra = []
 
-# Slurm job name used for helper-created sessions.
-# auto_reuse only attaches to running jobs with this exact name.
+# Slurm job name used for hpc-jump-created sessions.
+# auto_reuse only considers RUNNING jobs with this exact Slurm job name.
 job_name_prefix = "hpc-jump"
 
-# Automatically reuse an existing RUNNING hpc-jump Slurm job instead of requesting a new one.
+# Experimental: reuse an existing RUNNING hpc-jump Slurm job instead of requesting a new allocation.
+# This reuses the Slurm allocation/node, not your prior shell state.
 auto_reuse = true
 
 # Optional project folder opened automatically in VS Code.
-remote_project_path = "/home/your_username/project"
+remote_project_path = "/home/your_username"
