@@ -131,21 +131,35 @@ pip install -e .
 
 ## Configure
 
-Copy the example config:
+Create a config template:
 
 ```bash
-mkdir -p ~/.config/hpc-jump
-cp examples/config.toml ~/.config/hpc-jump/config.toml
+hpc-jump init my-hpc
 ```
 
-On Windows PowerShell:
+On Windows PowerShell, use the same command:
 
 ```powershell
-mkdir $env:USERPROFILE\.config\hpc-jump
-copy examples\config.toml $env:USERPROFILE\.config\hpc-jump\config.toml
+hpc-jump init my-hpc
 ```
 
-Edit the cluster profile.
+This writes:
+
+```text
+~/.config/hpc-jump/config.toml
+```
+
+Edit at least:
+
+- `login_host`
+- `user`
+- `remote_project_path`
+
+Use `--force` to overwrite an existing config:
+
+```bash
+hpc-jump init my-hpc --force
+```
 
 ## Check your setup
 
@@ -178,7 +192,7 @@ hpc-jump connect my-hpc
 Useful variants:
 
 ```bash
-hpc-jump connect my-hpc --time 04:00:00 --cpus 4 --mem 16G
+hpc-jump connect my-hpc --time 04:00:00 --cpus 1 --mem 16G
 hpc-jump connect my-hpc --existing-job 12345678
 hpc-jump attach my-hpc 12345678
 hpc-jump ssh-config my-hpc --node compute123
@@ -186,6 +200,8 @@ hpc-jump cancel my-hpc --job-id 12345678
 ```
 
 ## Notes
+
+`auto_reuse` is experimental. It reuses a matching RUNNING Slurm allocation, not shell state. Use tmux if you want to return to the same shell environment.
 
 This tool deliberately uses local OpenSSH via `subprocess` rather than a Python SSH library. That preserves your normal SSH behavior, including keys, MFA, Kerberos/GSSAPI, host-key checking, `ProxyJump`, and `ControlMaster`.
 
