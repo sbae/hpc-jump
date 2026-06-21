@@ -4,7 +4,6 @@ from pathlib import Path
 
 from .config import ClusterConfig
 
-
 DEFAULT_SSH_CONFIG = Path("~/.ssh/config").expanduser()
 
 
@@ -15,9 +14,10 @@ def _markers(cluster_name: str) -> tuple[str, str]:
 
 
 def _proxy_jump_target(cluster: ClusterConfig) -> str:
+    host = cluster.login_host if cluster.port == 22 else f"{cluster.login_host}:{cluster.port}"
     if cluster.user:
-        return f"{cluster.user}@{cluster.login_host}"
-    return cluster.login_host
+        return f"{cluster.user}@{host}"
+    return host
 
 
 def render_host_block(cluster: ClusterConfig, compute_node: str) -> str:
