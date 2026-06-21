@@ -6,12 +6,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .templates import config_template
+
 DEFAULT_CONFIG_PATH = Path("~/.config/hpc-jump/config.toml").expanduser()
+
 
 @dataclass(frozen=True)
 class ClusterConfig:
     name: str
     login_host: str
+    port: int = 22
     user: str | None = None
     ssh_alias: str | None = None
     default_partition: str | None = None
@@ -31,11 +35,22 @@ class ClusterConfig:
     def effective_user(self) -> str:
         return self.user or os.getlogin()
 
+
+def init_config(path: Path = DEFAULT_CONFIG_PATH, cluster_name: str = "my-hpc", overwrite: bool = False) -> Path:
+    path = path.expanduser()
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"Config already exists: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(config_template(cluster_name))
+    return path
+
+
 def load_config(path: Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
     with path.open("rb") as f:
         return tomllib.load(f)
+
 
 def load_cluster(name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> ClusterConfig:
     raw = load_config(config_path)
@@ -55,6 +70,7 @@ def load_cluster(name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> ClusterC
     return ClusterConfig(
         name=name,
         login_host=str(data["login_host"]),
+        port=int(data.get("port", 22)),
         user=data.get("user"),
         ssh_alias=data.get("ssh_alias"),
         default_partition=data.get("default_partition"),
