@@ -9,6 +9,10 @@ from typing import Sequence
 from .config import ClusterConfig
 
 
+DEFAULT_SSH_TIMEOUT_SECONDS = 60
+DEFAULT_ALLOCATION_TIMEOUT_SECONDS = 3600
+
+
 @dataclass(frozen=True)
 class SlurmJob:
     job_id: str
@@ -22,13 +26,25 @@ def _ssh_target(cluster: ClusterConfig) -> str:
     return cluster.login_host
 
 
-def run_login(cluster: ClusterConfig, command: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+def run_login(
+    cluster: ClusterConfig,
+    command: str,
+    check: bool = True,
+    timeout: int = DEFAULT_SSH_TIMEOUT_SECONDS,
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["ssh", _ssh_target(cluster), command],
+        [
+            "ssh",
+            "-o",
+            f"ConnectTimeout={min(timeout, DEFAULT_SSH_TIMEOUT_SECONDS)}",
+            _ssh_target(cluster),
+            command,
+        ],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=check,
+        timeout=timeout,
     )
 
 
@@ -83,6 +99,7 @@ def allocate_job(
     cpus: int,
     mem: str,
     extra: Sequence[str] | None = None,
+    timeout_seconds: int = DEFAULT_ALLOCATION_TIMEOUT_SECONDS,
 ) -> str:
     args = [
         "salloc",
@@ -96,7 +113,7 @@ def allocate_job(
     args.extend(extra or [])
 
     remote_cmd = " ".join(shlex.quote(x) for x in args)
-    proc = run_login(cluster, remote_cmd, check=False)
+    proc = run_login(cluster, remote_cmd, check=False, timeout=timeout_seconds)
     combined = "\n".join([proc.stdout, proc.stderr])
 
     for token in combined.replace(":", " ").split():

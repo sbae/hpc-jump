@@ -67,6 +67,7 @@ def connect(
                 cpus=ncpus,
                 mem=memory,
                 extra=cluster.salloc_extra,
+                timeout_seconds=wait_timeout,
             )
             console.print(f"Allocated/submitted job {job_id}; waiting for compute node...")
             job = wait_for_node(cluster, job_id, timeout_seconds=wait_timeout)
