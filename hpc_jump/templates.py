@@ -21,9 +21,11 @@ port = 22
 user = "your_username"
 
 # Optional SSH private key file.
-# Windows example: C:/Users/your_username/.ssh/id_ed25519
+# Use forward slashes in TOML paths, even on Windows.
+# Good Windows example: C:/Users/your_windows_username/.ssh/id_ed25519
+# Bad Windows example:  C:\Users\your_windows_username\.ssh\id_ed25519
 # macOS/Linux example: ~/.ssh/id_ed25519
-identity_file = "~/.ssh/id_ed25519"
+identity_file = "C:/Users/your_windows_username/.ssh/id_ed25519"
 
 # Local SSH alias managed by hpc-jump.
 # This is the name VS Code connects to after hpc-jump resolves the compute node.
