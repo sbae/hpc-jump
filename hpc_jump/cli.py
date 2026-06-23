@@ -8,6 +8,7 @@ from rich.table import Table
 
 from .config import DEFAULT_CONFIG_PATH, init_config, load_cluster
 from .doctor import (
+    check_code_cli,
     check_config_file,
     check_executable,
     check_login_reachable,
@@ -156,7 +157,7 @@ def doctor(
     results = [
         check_python(),
         check_executable("ssh", ["ssh", "-V"]),
-        check_executable("code", ["code", "--version"]),
+        check_code_cli(),
         check_config_file(config),
         check_ssh_config_writable(ssh_config),
         check_vscode_remote_ssh(),
