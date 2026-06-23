@@ -17,6 +17,7 @@ class ClusterConfig:
     login_host: str
     port: int = 22
     user: str | None = None
+    identity_file: str | None = None
     ssh_alias: str | None = None
     default_partition: str | None = None
     default_time: str = "04:00:00"
@@ -72,6 +73,7 @@ def load_cluster(name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> ClusterC
         login_host=str(data["login_host"]),
         port=int(data.get("port", 22)),
         user=data.get("user"),
+        identity_file=data.get("identity_file"),
         ssh_alias=data.get("ssh_alias"),
         default_partition=data.get("default_partition"),
         default_time=str(data.get("default_time", "04:00:00")),
