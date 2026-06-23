@@ -4,6 +4,7 @@ import shlex
 import subprocess
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Sequence
 
 from .config import ClusterConfig
@@ -26,6 +27,13 @@ def _ssh_target(cluster: ClusterConfig) -> str:
     return cluster.login_host
 
 
+def _ssh_args(cluster: ClusterConfig) -> list[str]:
+    args = ["ssh", "-p", str(cluster.port)]
+    if cluster.identity_file:
+        args.extend(["-i", str(Path(cluster.identity_file).expanduser())])
+    return args
+
+
 def run_login(
     cluster: ClusterConfig,
     command: str,
@@ -34,9 +42,7 @@ def run_login(
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
-            "ssh",
-            "-p",
-            str(cluster.port),
+            *_ssh_args(cluster),
             "-o",
             f"ConnectTimeout={min(timeout, DEFAULT_SSH_TIMEOUT_SECONDS)}",
             _ssh_target(cluster),
