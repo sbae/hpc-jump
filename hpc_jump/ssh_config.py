@@ -20,6 +20,12 @@ def _proxy_jump_target(cluster: ClusterConfig) -> str:
     return host
 
 
+def _identity_file(cluster: ClusterConfig) -> str | None:
+    if not cluster.identity_file:
+        return None
+    return str(Path(cluster.identity_file).expanduser())
+
+
 def render_host_block(cluster: ClusterConfig, compute_node: str) -> str:
     lines = [
         _markers(cluster.name)[0],
@@ -28,6 +34,9 @@ def render_host_block(cluster: ClusterConfig, compute_node: str) -> str:
     ]
     if cluster.user:
         lines.append(f"    User {cluster.user}")
+    identity_file = _identity_file(cluster)
+    if identity_file:
+        lines.append(f"    IdentityFile {identity_file}")
     lines.extend(
         [
             f"    ProxyJump {_proxy_jump_target(cluster)}",
