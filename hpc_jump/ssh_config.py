@@ -13,33 +13,45 @@ def _markers(cluster_name: str) -> tuple[str, str]:
     return start, end
 
 
-def _proxy_jump_target(cluster: ClusterConfig) -> str:
-    host = cluster.login_host if cluster.port == 22 else f"{cluster.login_host}:{cluster.port}"
-    if cluster.user:
-        return f"{cluster.user}@{host}"
-    return host
-
-
 def _identity_file(cluster: ClusterConfig) -> str | None:
     if not cluster.identity_file:
         return None
     return str(Path(cluster.identity_file).expanduser())
 
 
+def _login_alias(cluster: ClusterConfig) -> str:
+    return f"{cluster.effective_ssh_alias}-login"
+
+
 def render_host_block(cluster: ClusterConfig, compute_node: str) -> str:
+    identity_file = _identity_file(cluster)
+    login_alias = _login_alias(cluster)
+
     lines = [
         _markers(cluster.name)[0],
-        f"Host {cluster.effective_ssh_alias}",
-        f"    HostName {compute_node}",
+        f"Host {login_alias}",
+        f"    HostName {cluster.login_host}",
+        f"    Port {cluster.port}",
     ]
     if cluster.user:
         lines.append(f"    User {cluster.user}")
-    identity_file = _identity_file(cluster)
+    if identity_file:
+        lines.append(f"    IdentityFile {identity_file}")
+
+    lines.extend(
+        [
+            "",
+            f"Host {cluster.effective_ssh_alias}",
+            f"    HostName {compute_node}",
+        ]
+    )
+    if cluster.user:
+        lines.append(f"    User {cluster.user}")
     if identity_file:
         lines.append(f"    IdentityFile {identity_file}")
     lines.extend(
         [
-            f"    ProxyJump {_proxy_jump_target(cluster)}",
+            f"    ProxyJump {login_alias}",
             "    ServerAliveInterval 30",
             "    ServerAliveCountMax 3",
             _markers(cluster.name)[1],
