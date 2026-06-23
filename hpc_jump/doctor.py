@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .config import ClusterConfig
 from .slurm import run_login
+from .vscode import find_code_executable
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,18 @@ def check_executable(name: str, command: list[str] | None = None) -> CheckResult
         return CheckResult(name, False, str(exc))
 
 
+def check_code_cli() -> CheckResult:
+    code = find_code_executable()
+    if not code:
+        return CheckResult("code", False, "not found on PATH or common VS Code install paths")
+    try:
+        proc = _run_local([code, "--version"])
+        detail = _first_line(proc.stdout) or _first_line(proc.stderr) or code
+        return CheckResult("code", proc.returncode == 0, detail)
+    except Exception as exc:
+        return CheckResult("code", False, str(exc))
+
+
 def check_config_file(path: Path) -> CheckResult:
     if not path.exists():
         return CheckResult("config file", False, f"not found: {path}")
@@ -73,10 +86,11 @@ def check_ssh_config_writable(path: Path) -> CheckResult:
 
 
 def check_vscode_remote_ssh() -> CheckResult:
-    if not shutil.which("code"):
+    code = find_code_executable()
+    if not code:
         return CheckResult("VS Code Remote-SSH extension", False, "code CLI not found")
     try:
-        proc = _run_local(["code", "--list-extensions"], timeout=20)
+        proc = _run_local([code, "--list-extensions"], timeout=20)
         exts = {line.strip().lower() for line in proc.stdout.splitlines()}
         ok = "ms-vscode-remote.remote-ssh" in exts
         return CheckResult(
