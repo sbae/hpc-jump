@@ -20,6 +20,11 @@ port = 22
 # Usually your HPC/Linux/Kerberos username, not your email address.
 user = "your_username"
 
+# Optional SSH private key file.
+# Windows example: C:/Users/your_username/.ssh/id_ed25519
+# macOS/Linux example: ~/.ssh/id_ed25519
+identity_file = "~/.ssh/id_ed25519"
+
 # Local SSH alias managed by hpc-jump.
 # This is the name VS Code connects to after hpc-jump resolves the compute node.
 ssh_alias = "hpc-cpu-short"
