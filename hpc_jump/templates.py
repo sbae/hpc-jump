@@ -3,7 +3,7 @@ from __future__ import annotations
 
 def config_template(cluster_name: str = "my-hpc") -> str:
     safe_name = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in cluster_name)
-    return f'''# hpc-jump configuration file.
+    return rf'''# hjump configuration file.
 # Create one [clusters.<name>] section per cluster.
 
 [clusters.{safe_name}]
@@ -27,8 +27,8 @@ user = "your_username"
 # macOS/Linux example: ~/.ssh/id_ed25519
 identity_file = "C:/Users/your_windows_username/.ssh/id_ed25519"
 
-# Local SSH alias managed by hpc-jump.
-# This is the name VS Code connects to after hpc-jump resolves the compute node.
+# Local SSH alias managed by hjump.
+# This is the name VS Code connects to after hjump resolves the compute node.
 ssh_alias = "hpc-cpu-short"
 
 # Default Slurm partition/queue.
@@ -48,11 +48,15 @@ default_mem = "16G"
 # Example: salloc_extra = ["--mem-per-cpu=30G"]
 salloc_extra = []
 
-# Slurm job name used for hpc-jump-created sessions.
-# auto_reuse only considers RUNNING jobs with this exact Slurm job name.
-job_name_prefix = "hpc-jump"
+# Optional command run before every remote Slurm command.
+# Uncomment when your cluster requires Slurm to be loaded as a module.
+# remote_init = "module load slurm"
 
-# Experimental: reuse an existing RUNNING hpc-jump Slurm job instead of requesting a new allocation.
+# Slurm job name used for hjump-created sessions.
+# auto_reuse only considers RUNNING jobs with this exact Slurm job name.
+job_name_prefix = "hjump"
+
+# Experimental: reuse an existing RUNNING hjump Slurm job instead of requesting a new allocation.
 # This reuses the Slurm allocation/node, not your prior shell state.
 auto_reuse = true
 

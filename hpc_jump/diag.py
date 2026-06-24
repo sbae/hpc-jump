@@ -102,9 +102,9 @@ def check_vscode_remote_ssh() -> CheckResult:
         return CheckResult("VS Code Remote-SSH extension", False, str(exc))
 
 
-def check_login_reachable(cluster: ClusterConfig) -> CheckResult:
+def check_login_reachable(cluster: ClusterConfig, timeout: int = 15) -> CheckResult:
     try:
-        proc = run_login(cluster, "echo ok", check=False)
+        proc = run_login(cluster, "echo ok", check=False, timeout=timeout)
         ok = proc.returncode == 0 and proc.stdout.strip() == "ok"
         detail = "reachable" if ok else (_first_line(proc.stderr) or _first_line(proc.stdout) or "failed")
         return CheckResult("login node SSH", ok, detail)
@@ -112,9 +112,9 @@ def check_login_reachable(cluster: ClusterConfig) -> CheckResult:
         return CheckResult("login node SSH", False, str(exc))
 
 
-def check_remote_command(cluster: ClusterConfig, command: str) -> CheckResult:
+def check_remote_command(cluster: ClusterConfig, command: str, timeout: int = 15) -> CheckResult:
     try:
-        proc = run_login(cluster, f"command -v {command}", check=False)
+        proc = run_login(cluster, f"command -v {command}", check=False, timeout=timeout)
         detail = proc.stdout.strip() or proc.stderr.strip() or "not found"
         return CheckResult(f"remote {command}", proc.returncode == 0, detail)
     except Exception as exc:

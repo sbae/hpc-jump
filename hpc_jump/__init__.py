@@ -1,3 +1,3 @@
-"""hpc-jump package."""
+"""hjump package."""
 
 __version__ = "0.1.0"

@@ -1,4 +1,4 @@
-# hpc-jump configuration file.
+# hjump configuration file.
 # Create one [clusters.<name>] section per cluster.
 
 [clusters.my-hpc]
@@ -15,16 +15,15 @@ port = 22
 # Usually your HPC/Linux/Kerberos username, not your email address.
 user = "your_username"
 
-# Optional SSH private key file.
-# Use forward slashes in TOML paths, even on Windows.
+# Optional SSH private key file. (For password-less login)
+# Use forward slashes in here, even on Windows.
 # Good Windows example: C:/Users/your_windows_username/.ssh/id_ed25519
 # Bad Windows example:  C:\Users\your_windows_username\.ssh\id_ed25519
 # macOS/Linux example: ~/.ssh/id_ed25519
 identity_file = "C:/Users/your_windows_username/.ssh/id_ed25519"
 
-# Local SSH alias managed by hpc-jump.
-# This is the name VS Code connects to after hpc-jump resolves the compute node.
-ssh_alias = "hpc-cpu-short"
+# Optional project folder opened automatically in VS Code.
+remote_project_path = "/home/your_username"
 
 # Default Slurm partition/queue.
 default_partition = "cpu_short"
@@ -43,13 +42,18 @@ default_mem = "16G"
 # Example: salloc_extra = ["--mem-per-cpu=30G"]
 salloc_extra = []
 
-# Slurm job name used for hpc-jump-created sessions.
-# auto_reuse only considers RUNNING jobs with this exact Slurm job name.
-job_name_prefix = "hpc-jump"
+# Optional command run before every remote Slurm command.
+# Uncomment when your cluster requires Slurm to be loaded as a module.
+# remote_init = "module load slurm"
 
-# Experimental: reuse an existing RUNNING hpc-jump Slurm job instead of requesting a new allocation.
+# Slurm job name used for hjump-created sessions.
+# auto_reuse only considers RUNNING jobs with this exact Slurm job name.
+job_name_prefix = "hjump"
+
+# Local SSH alias managed by hjump.
+# This is the name VS Code connects to after hjump resolves the compute node.
+ssh_alias = "hpc-cpu-short"
+
+# Experimental: reuse an existing RUNNING hjump Slurm job instead of requesting a new allocation.
 # This reuses the Slurm allocation/node, not your prior shell state.
 auto_reuse = true
-
-# Optional project folder opened automatically in VS Code.
-remote_project_path = "/home/your_username"

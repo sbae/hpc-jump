@@ -8,7 +8,7 @@ from typing import Any
 
 from .templates import config_template
 
-DEFAULT_CONFIG_PATH = Path("~/.config/hpc-jump/config.toml").expanduser()
+DEFAULT_CONFIG_PATH = Path("~/.config/hjump/config.toml").expanduser()
 
 
 @dataclass(frozen=True)
@@ -24,9 +24,10 @@ class ClusterConfig:
     default_cpus: int = 1
     default_mem: str = "16G"
     salloc_extra: list[str] = field(default_factory=list)
+    remote_init: str | None = None
     remote_project_path: str | None = None
     auto_reuse: bool = True
-    job_name_prefix: str = "hpc-jump"
+    job_name_prefix: str = "hjump"
 
     @property
     def effective_ssh_alias(self) -> str:
@@ -67,6 +68,9 @@ def load_cluster(name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> ClusterC
     extra = data.get("salloc_extra", []) or []
     if not isinstance(extra, list) or not all(isinstance(x, str) for x in extra):
         raise ValueError("salloc_extra must be a list of strings")
+    remote_init = data.get("remote_init")
+    if remote_init is not None and not isinstance(remote_init, str):
+        raise ValueError("remote_init must be a string")
 
     return ClusterConfig(
         name=name,
@@ -80,7 +84,8 @@ def load_cluster(name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> ClusterC
         default_cpus=int(data.get("default_cpus", 1)),
         default_mem=str(data.get("default_mem", "16G")),
         salloc_extra=extra,
+        remote_init=remote_init,
         remote_project_path=data.get("remote_project_path"),
         auto_reuse=bool(data.get("auto_reuse", True)),
-        job_name_prefix=str(data.get("job_name_prefix", "hpc-jump")),
+        job_name_prefix=str(data.get("job_name_prefix", "hjump")),
     )

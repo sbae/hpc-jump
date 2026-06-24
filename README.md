@@ -1,4 +1,9 @@
-# hpc-jump
+# hjump (aka hpc-jump)
+
+> You use a Slurm HPC cluster for work. You can't live without VS Code. Your admin hates you because VS Code
+> quietly spawns a server, file watchers, and a language server, all on the login node, and just won't stop.
+>
+> Is this your story?
 
 Small CLI helper for opening VS Code Remote-SSH on a Slurm compute node instead of on an HPC login node.
 
@@ -15,58 +20,12 @@ This keeps the VS Code server, file watchers, terminals, and language servers of
 ## Requirements
 
 - Python 3.11+
-- OpenSSH client available as `ssh`
+- OpenSSH client available as `ssh` (most computers already have it)
 - VS Code command-line launcher available as `code`
 - VS Code Remote-SSH extension: `ms-vscode-remote.remote-ssh`
 - A working SSH config or hostname for the HPC login node
 
 ## Install
-
-### macOS
-
-Using Homebrew and pipx:
-
-```bash
-brew install pipx
-pipx ensurepath
-pipx install git+https://github.com/sbae/hpc-jump.git
-```
-
-Verify:
-
-```bash
-ssh -V
-code --version
-hpc-jump --help
-```
-
-If `code` is missing, open VS Code and run `Shell Command: Install 'code' command in PATH` from the command palette.
-
-### Linux
-
-Ubuntu/Debian:
-
-```bash
-sudo apt install pipx
-pipx ensurepath
-pipx install git+https://github.com/sbae/hpc-jump.git
-```
-
-Generic Python install:
-
-```bash
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-pipx install git+https://github.com/sbae/hpc-jump.git
-```
-
-Verify:
-
-```bash
-ssh -V
-code --version
-hpc-jump --help
-```
 
 ### Windows
 
@@ -94,71 +53,86 @@ pipx install git+https://github.com/sbae/hpc-jump.git
 Verify:
 
 ```powershell
-hpc-jump --help
+hjump --help
 code --version
 ```
 
 If `code` is missing, reinstall VS Code with the option to add it to PATH, or enable the VS Code command-line launcher.
 
+### macOS (experimental)
+
+Using Homebrew and pipx:
+
+```bash
+brew install pipx
+pipx ensurepath
+pipx install git+https://github.com/sbae/hpc-jump.git
+```
+
+Verify:
+
+```bash
+ssh -V
+code --version
+hjump --help
+```
+
+If `code` is missing, open VS Code and run `Shell Command: Install 'code' command in PATH` from the command palette.
+
+### Linux (experimental)
+
+Ubuntu/Debian:
+
+```bash
+sudo apt install pipx
+pipx ensurepath
+pipx install git+https://github.com/sbae/hpc-jump.git
+```
+
+Generic Python install:
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+pipx install git+https://github.com/sbae/hpc-jump.git
+```
+
+Verify:
+
+```bash
+ssh -V
+code --version
+hjump --help
+```
+
 ### Upgrade
 
 ```bash
-pipx upgrade hpc-jump
-```
-
-### Install from a local clone
-
-```bash
-git clone https://github.com/sbae/hpc-jump.git
-cd hpc-jump
-pipx install .
-```
-
-or during development:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-On Windows PowerShell, activate the venv with:
-
-```powershell
-.venv\Scripts\Activate.ps1
-pip install -e .
+pipx upgrade hjump
 ```
 
 ## Configure
 
-Create a config template:
+```bash
+hjump init my-hpc
+```
+
+This creates a starter config (at `~/.config/hjump/config.toml`) and opens it in VS Code automatically. Fill in at least:
+
+- `login_host` — hostname or alias for your HPC login node
+- `user` — your HPC username
+- `remote_project_path` — path to your project on the cluster
+
+To open the config again later:
 
 ```bash
-hpc-jump init my-hpc
+hjump config
 ```
 
-On Windows PowerShell, use the same command:
-
-```powershell
-hpc-jump init my-hpc
-```
-
-This writes:
-
-```text
-~/.config/hpc-jump/config.toml
-```
-
-Edit at least:
-
-- `login_host`
-- `user`
-- `remote_project_path`
-
-Use `--force` to overwrite an existing config:
+To overwrite an existing config:
 
 ```bash
-hpc-jump init my-hpc --force
+hjump init my-hpc --force
 ```
 
 ## Check your setup
@@ -166,37 +140,50 @@ hpc-jump init my-hpc --force
 Local-only checks:
 
 ```bash
-hpc-jump doctor
+hjump diag
 ```
 
 Check a configured cluster, including login-node Slurm commands:
 
 ```bash
-hpc-jump doctor my-hpc
+hjump diag my-hpc
+```
+
+Show each check as it runs and limit every remote check to 10 seconds:
+
+```bash
+hjump diag my-hpc --verbose --remote-timeout 10
 ```
 
 Skip remote checks:
 
 ```bash
-hpc-jump doctor my-hpc --no-remote
+hjump diag my-hpc --no-remote
 ```
 
-The doctor command checks Python, `ssh`, `code`, the config file, SSH config writability, the VS Code Remote-SSH extension, login-node reachability, and remote Slurm commands.
+The `diag` command checks Python, `ssh`, `code`, configuration, VS Code Remote-SSH, login-node reachability, and remote Slurm commands.
 
 ## Use
 
 ```bash
-hpc-jump connect my-hpc
+hjump go my-hpc
+```
+
+Show OpenSSH authentication and connection diagnostics:
+
+```bash
+hjump go my-hpc --verbose
 ```
 
 Useful variants:
 
 ```bash
-hpc-jump connect my-hpc --time 04:00:00 --cpus 1 --mem 16G
-hpc-jump connect my-hpc --existing-job 12345678
-hpc-jump attach my-hpc 12345678
-hpc-jump ssh-config my-hpc --node compute123
-hpc-jump cancel my-hpc --job-id 12345678
+hjump go my-hpc --time 04:00:00 --cpus 1 --mem 16G
+hjump go my-hpc --dir '~/project3'
+hjump go my-hpc --existing-job 12345678
+hjump attach my-hpc 12345678
+hjump ssh-config my-hpc --node compute123
+hjump cancel my-hpc --job-id 12345678
 ```
 
 ## Notes
@@ -206,3 +193,10 @@ hpc-jump cancel my-hpc --job-id 12345678
 This tool deliberately uses local OpenSSH via `subprocess` rather than a Python SSH library. That preserves your normal SSH behavior, including keys, MFA, Kerberos/GSSAPI, host-key checking, `ProxyJump`, and `ControlMaster`.
 
 WSL is not a first-class target yet. Native Windows PowerShell is the intended Windows path for now.
+
+### Windows SSH config permissions
+
+`hjump` restricts the generated SSH config ACL to the current user, SYSTEM,
+and the local Administrators group, as required by Windows OpenSSH. If an older
+generated config reports `Bad owner or permissions`, remove inherited and
+`OWNER RIGHTS` access with `icacls`, then grant the current user full control.

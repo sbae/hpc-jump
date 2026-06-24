@@ -30,6 +30,16 @@ def find_code_executable() -> str | None:
     return None
 
 
+def open_in_vscode(path: Path) -> None:
+    code = find_code_executable()
+    if not code:
+        raise FileNotFoundError(
+            "Could not find the VS Code command-line launcher 'code'. "
+            "Add VS Code to PATH or install the 'code' command-line launcher."
+        )
+    subprocess.run([code, str(path)], check=True)
+
+
 def launch_vscode(ssh_alias: str, remote_path: str | None = None) -> None:
     code = find_code_executable()
     if not code:

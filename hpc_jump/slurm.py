@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +13,9 @@ from .config import ClusterConfig
 
 DEFAULT_SSH_TIMEOUT_SECONDS = 60
 DEFAULT_ALLOCATION_TIMEOUT_SECONDS = 3600
+_SSH_VERBOSE = False
+_OUTPUT_START = "__HPC_JUMP_OUTPUT_START__"
+_OUTPUT_END = "__HPC_JUMP_OUTPUT_END__"
 
 
 @dataclass(frozen=True)
@@ -29,9 +34,16 @@ def _ssh_target(cluster: ClusterConfig) -> str:
 
 def _ssh_args(cluster: ClusterConfig) -> list[str]:
     args = ["ssh", "-p", str(cluster.port)]
+    if _SSH_VERBOSE:
+        args.append("-v")
     if cluster.identity_file:
         args.extend(["-i", str(Path(cluster.identity_file).expanduser())])
     return args
+
+
+def set_ssh_verbose(enabled: bool) -> None:
+    global _SSH_VERBOSE
+    _SSH_VERBOSE = enabled
 
 
 def run_login(
@@ -40,20 +52,46 @@ def run_login(
     check: bool = True,
     timeout: int = DEFAULT_SSH_TIMEOUT_SECONDS,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    # SSH runs commands in a non-login shell, which commonly has a reduced PATH
+    # on HPC systems. Use a login shell so site Slurm setup is loaded. Sites that
+    # require an environment module can provide remote_init in the cluster config.
+    init = f"{cluster.remote_init} || exit $?; " if cluster.remote_init else ""
+    framed_command = (
+        f"{init}printf '{_OUTPUT_START}\\n'; "
+        f"{command}; status=$?; "
+        f"printf '\\n{_OUTPUT_END}\\n'; exit $status"
+    )
+    remote_command = f"bash -lc {shlex.quote(framed_command)}"
+    proc = subprocess.run(
         [
             *_ssh_args(cluster),
             "-o",
             f"ConnectTimeout={min(timeout, DEFAULT_SSH_TIMEOUT_SECONDS)}",
             _ssh_target(cluster),
-            command,
+            remote_command,
         ],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        check=check,
+        check=False,
         timeout=timeout,
     )
+    if _SSH_VERBOSE and proc.stderr:
+        print(proc.stderr, file=sys.stderr, end="" if proc.stderr.endswith("\n") else "\n")
+
+    # Login profiles sometimes print greetings. Only expose output produced by
+    # the requested command so those messages cannot corrupt Slurm parsers.
+    if _OUTPUT_START in proc.stdout and _OUTPUT_END in proc.stdout:
+        stdout = proc.stdout.rsplit(_OUTPUT_START, 1)[1].split(_OUTPUT_END, 1)[0]
+        stdout = stdout.removeprefix("\r\n").removeprefix("\n").removesuffix("\r\n").removesuffix("\n")
+        proc = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, proc.stderr)
+    if check and proc.returncode != 0:
+        detail = "" if _SSH_VERBOSE else (proc.stderr.strip() or proc.stdout.strip())
+        message = f"Remote SSH command failed with exit code {proc.returncode}."
+        if detail:
+            message = f"{message}\n{detail}"
+        raise RuntimeError(message)
+    return proc
 
 
 def _first_host_from_nodelist(cluster: ClusterConfig, nodelist: str) -> str | None:
@@ -126,13 +164,13 @@ def allocate_job(
     remote_cmd = " ".join(shlex.quote(x) for x in args)
     proc = run_login(cluster, remote_cmd, check=False, timeout=timeout_seconds)
     combined = "\n".join([proc.stdout, proc.stderr])
-
-    for token in combined.replace(":", " ").split():
-        if token.isdigit():
-            return token
+    match = re.search(r"\b(?:Granted|Pending) job allocation (\d+)\b", combined)
+    if match:
+        return match.group(1)
 
     raise RuntimeError(
-        "Could not determine Slurm job id from salloc output. "
+        "Could not allocate a Slurm job or determine its id. "
+        f"remote exit code={proc.returncode}. "
         f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
     )
 
