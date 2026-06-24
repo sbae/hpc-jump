@@ -17,6 +17,18 @@ The intended workflow is:
 
 This keeps the VS Code server, file watchers, terminals, and language servers off the login node.
 
+## Commands
+
+| Command | Description |
+|---|---|
+| `hjump init <cluster>` | Create a config template and open it in VS Code |
+| `hjump config` | Re-open the config file in VS Code |
+| `hjump go <cluster>` | Allocate a Slurm job (or reuse one) and launch VS Code on the compute node |
+| `hjump attach <cluster> <job-id>` | Attach VS Code to an already-running Slurm job |
+| `hjump diag [cluster]` | Check local tools; optionally verify the cluster connection end-to-end |
+| `hjump cancel <cluster> --job-id <id>` | Cancel a Slurm job |
+| `hjump ssh-config <cluster> --node <node>` | Write an SSH config entry for a specific compute node |
+
 ## Requirements
 
 - Python 3.11+

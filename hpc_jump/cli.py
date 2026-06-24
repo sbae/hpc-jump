@@ -61,6 +61,7 @@ def init(
     config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config", help="Path to write config.toml."),
     force: bool = typer.Option(False, "--force", help="Overwrite an existing config file."),
 ) -> None:
+    """Create a config template for a cluster profile and open it in VS Code."""
     try:
         path = init_config(config, cluster_name=cluster_name, overwrite=force)
     except FileExistsError as exc:
@@ -106,6 +107,7 @@ def go(
     wait_timeout: int = typer.Option(3600, "--wait-timeout", help="Seconds to wait for a new allocation."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Print OpenSSH diagnostic output."),
 ) -> None:
+    """Allocate a Slurm job (or reuse one) and open VS Code on the compute node."""
     set_ssh_verbose(verbose)
     cluster = load_cluster(cluster_name, config)
     part = partition if partition is not None else cluster.default_partition
@@ -158,6 +160,7 @@ def ssh_config_command(
     config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
     ssh_config: Path = typer.Option(DEFAULT_SSH_CONFIG, "--ssh-config"),
 ) -> None:
+    """Write an SSH config entry pointing the cluster alias at a specific compute node."""
     cluster = load_cluster(cluster_name, config)
     update_ssh_config(cluster, node, ssh_config)
     console.print(f"Updated {ssh_config}: {cluster.effective_ssh_alias} -> {node}")
@@ -173,6 +176,7 @@ def attach(
     ssh_config: Path = typer.Option(DEFAULT_SSH_CONFIG, "--ssh-config"),
     directory: str | None = typer.Option(None, "--dir"),
 ) -> None:
+    """Attach VS Code to an already-running Slurm job by job id."""
     cluster = load_cluster(cluster_name, config)
     job = resolve_job(cluster, job_id)
     if not job.node:
@@ -193,6 +197,7 @@ def cancel(
     job_id: str = typer.Option(..., "--job-id", help="Slurm job id to cancel."),
     config: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
+    """Cancel a Slurm job by id."""
     cluster = load_cluster(cluster_name, config)
     cancel_job(cluster, job_id)
     console.print(f"Cancelled Slurm job {job_id}")
@@ -207,6 +212,7 @@ def diag(
     remote_timeout: int = typer.Option(15, "--remote-timeout", min=1, help="Timeout in seconds for each remote check."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Print each check as it runs."),
 ) -> None:
+    """Check local tools and optionally verify a cluster connection end-to-end."""
     console.print(f"Platform: {platform_summary()}")
 
     results = []
